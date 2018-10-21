@@ -5,10 +5,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.*;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.os.*;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
     Button btnOnOff, btnDiscover,  btnSend;
     ListView listView;
     TextView read_msg_box, connectionStatus;
@@ -50,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
         setContentView(R.layout.activity_main) ;
         initialWork();
         exqListener();
@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
                 mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
                     @Override
                     public void onSuccess() {
-                       Toast.makeText(that, "tada "+device.deviceName, Toast.LENGTH_SHORT).show();
+                       Toast.makeText(that, "connected to  "+device.deviceName, Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList  peerList) {
             if(!peerList.getDeviceList().equals(peers)) {
-                Toast.makeText(that, "Wifi 1!" + peerList.getDeviceList().size(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(that,  peerList.getDeviceList().size() + "devices found", Toast.LENGTH_SHORT).show();
 
                 peers.clear();
                 peers.addAll(peerList.getDeviceList());
@@ -283,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                socket.connect(new InetSocketAddress(hostAdd, 4000), 5000);
+                socket.connect(new InetSocketAddress(hostAdd, 4000), 10000);
                 sendReceive = new SendReceive(socket);
                 sendReceive.start();
             }
@@ -349,6 +349,9 @@ public class MainActivity extends AppCompatActivity {
         {
 
             try{
+
+                Log.i("message", "writing in output");
+
                 outputStream.write(bytes);
                 Log.i("message", "writing in output");
 
