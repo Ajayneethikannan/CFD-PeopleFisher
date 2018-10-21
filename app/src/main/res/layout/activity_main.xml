@@ -13,9 +13,9 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:layout_marginStart="28dp"
-            android:layout_marginTop="55dp"
-            android:text="Wifi On" />
+            android:layout_marginStart="46dp"
+            android:layout_marginTop="53dp"
+            android:text="Wifi On"/>
 
     <Button
             android:id="@+id/discover"
@@ -77,5 +77,16 @@
             android:textColor="@android:color/holo_blue_dark"
             android:textSize="18sp"
             android:textStyle="italic" tools:layout_editor_absoluteY="48dp" tools:layout_editor_absoluteX="54dp"/>
+    <Button
+            android:text="location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginLeft="250dp"
+            android:layout_marginStart="250dp"
+            android:layout_marginTop="55dp"
+            android:id="@+id/btnGetLoc"/>
 
 </RelativeLayout>

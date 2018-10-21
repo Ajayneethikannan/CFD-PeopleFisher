@@ -1,11 +1,14 @@
 package com.example.ajaynk.peoplefisher2;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
+import android.location.Location;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.*;
 import android.os.*;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -23,7 +26,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button btnOnOff, btnDiscover,  btnSend;
+    Button btnOnOff, btnDiscover,  btnSend, btnLoc;
     ListView listView;
     TextView read_msg_box, connectionStatus;
     EditText writeMsg;
@@ -53,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main) ;
         initialWork();
         exqListener();
+        ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 123);
     }
 
 
@@ -68,6 +72,10 @@ public class MainActivity extends AppCompatActivity {
                     String tempMsg = new String(readbuff, 0, msg.arg1);
                     read_msg_box.setText(tempMsg);
                     break;
+                case 2:
+                     Bundle data = msg.getData();
+                    read_msg_box.setText(data.getString("name"));
+
             }
             return true;
         }
@@ -140,13 +148,31 @@ public class MainActivity extends AppCompatActivity {
            public void onClick(View view) {
                  String msg = writeMsg.getText().toString();
                Toast.makeText(that, "msg = "+ msg, Toast.LENGTH_SHORT).show();
-                 sendReceive.write(msg.getBytes());
+                 sendReceive.write(msg);
 
            }
        });
+
+        btnLoc.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                GpsTracker gt = new GpsTracker(getApplicationContext());
+                Location l = gt.getLocation();
+                if( l == null){
+                    Toast.makeText(getApplicationContext(),"GPS unable to get Value",Toast.LENGTH_SHORT).show();
+                }else {
+                    double lat = l.getLatitude();
+                    double lon = l.getLongitude();
+                    Toast.makeText(getApplicationContext(),"GPS Lat = "+lat+"\n lon = "+lon,Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
     private void initialWork()
     {
+
+        btnLoc = (Button) findViewById(R.id.btnGetLoc);
         btnOnOff = (Button)findViewById(R.id.onOff);
         btnDiscover = (Button)findViewById(R.id.discover);
         btnSend = (Button)findViewById(R.id.sendButton);
@@ -345,14 +371,19 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        public void write(byte[] bytes)
+        public void write(String str)
         {
 
             try{
 
                 Log.i("message", "writing in output");
 
-                outputStream.write(bytes);
+                outputStream.write(str.getBytes());
+                Message message  = new Message();
+                message.what = 2;
+                message.getData().putString("name", str);
+                handler.sendMessage(message);
+
                 Log.i("message", "writing in output");
 
 
