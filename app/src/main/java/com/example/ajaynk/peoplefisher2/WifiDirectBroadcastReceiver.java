@@ -43,7 +43,7 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
             // Call WifiP2pManager.requestPeers() to get a list of current peers
             if(this.mManager != null)
             {
-                Toast.makeText(context, "Wifi !", Toast.LENGTH_SHORT).show();
+
                 this.mManager.requestPeers(this.mChannel, this.mActivity.peerListListener);
             }
         } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
@@ -61,6 +61,17 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
             else
             {
                 mActivity.connectionStatus.setText("Device disconnected");
+                mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        mActivity.connectionStatus.setText("Discovery Started");
+                    }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        mActivity.connectionStatus.setText("Connection Failed"+ reason);
+                    }
+                });
             }
 
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
