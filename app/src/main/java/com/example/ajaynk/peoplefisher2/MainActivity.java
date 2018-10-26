@@ -22,6 +22,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     ListView MSG2ListView;
     ListView MSG3ListView;
     SendMessage sendMessage;
+    String ownDeviceName = "survivor";
 
 
     static boolean shouldSendMessage = false;
@@ -438,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
                     shouldSendMessage = false;
                 }
 
-                stopConnection();
+
 
 
             }
@@ -554,13 +557,15 @@ public class MainActivity extends AppCompatActivity {
 
                         //int  indexx =n.indexOf(null);
                         n= n.substring(0,len);
+                        Log.d("checking len"," len is "+len+" ");
                         switch(type)
                         {
                             case 1:
                                 Log.d("case 1", " 457");
                                 int first = n.indexOf(' ');
-                                float latitude = Float.parseFloat(n.substring(0, first));
-                                float longitude= Float.parseFloat(n.substring(first+1));
+                                int second = n.indexOf(' ',first+1);
+                                float latitude = Float.parseFloat(n.substring(0, second));
+                                float longitude= Float.parseFloat(n.substring(second+1));
                                 handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
                                 this.write("4");
                                 messageList1.add(new MSG1(latitude,longitude));
@@ -582,18 +587,18 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("case 2", " 471");
                                 handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
                                 int firind = n.indexOf(' ');
-                                int secind = n.indexOf(' ',firind+1);
-                                String mesg = n.substring(firind+1,secind);
+                                //int secind = n.indexOf(' ',firind+1);
+                                String mesg = n.substring(firind+1);
                                 int ones= Integer.parseInt(n.substring(0,firind));
-                                int threes = Integer.parseInt(n.substring(secind+1,len));
+                                //int threes = Integer.parseInt(n.substring(secind+1,len));
 
 
 
-                                messageList2.add(new MSG2(mesg,ones,threes));
+                                messageList2.add(new MSG2(mesg,ones));
                                 this.write("4");
                                 Collections.sort( (ArrayList)messageList2 , new Comparator<MSG2>(){
                                     public int compare(MSG2 o1, MSG2 o2){
-                                        return o1.date - o2.date;
+                                        return (int)(o1.date - o2.date);
                                     }
                                 });
                                 handler.obtainMessage(5, bytes, -1,buffer).sendToTarget();
@@ -612,16 +617,17 @@ public class MainActivity extends AppCompatActivity {
                                 handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
                                 this.write("4");
                                 int firind1 = n.indexOf(' ');
-                                int secind1 = n.indexOf(' ',firind1+1);
+                                //int secind1 = n.indexOf(' ',firind1+1);
+                                //int thirindind1 = n.indexOf(' ',secind1+1);
                                 Log.d("message " , n);
-                                String mesg1 = n.substring(firind1+1,secind1);
+                                String mesg1 = n.substring(firind1+1);
                                 int ones1= Integer.parseInt(n.substring(0,firind1));
                                 Log.d("message " , len + "");
                                 //int threes1 = Integer.parseInt(n.substring(secind1+1);
 
 
                                 this.write("4");
-                                messageList3.add(new MSG3(mesg1,ones1,1700));
+                                messageList3.add(new MSG3(mesg1,ones1));
                                 handler.obtainMessage(6, bytes, -1,buffer).sendToTarget();
                                 if(serverClass != null)
                                 {
@@ -660,7 +666,8 @@ public class MainActivity extends AppCompatActivity {
                 catch(IOException e)
                 {
                     e.printStackTrace();
-                    Log.i("message", "error reading");
+                    Log.i("messag" +
+                            "e", "error reading");
                     stopConnection();
                 }
 
@@ -785,15 +792,17 @@ public class MainActivity extends AppCompatActivity {
 
     public class MSG2{
         public String message;
-        public int date;
+        public long date;
+
+        public String name;
         public int type;
 
-        public MSG2(String masg, int type, int Date)
+        public MSG2(String masg, int type)
         {
             this.message = masg;
             this.type = type;
-            this.date = Date;
-
+            this.name=ownDeviceName;
+            this.date = System.currentTimeMillis();;
 
         }
     }
@@ -801,24 +810,26 @@ public class MainActivity extends AppCompatActivity {
     public class MSG1{
         public float longitud;
         public float latitud;
+        public String name;
         public MSG1(float longitudee,float latitudee){
             this.longitud = longitudee;
             this.latitud= latitudee;
+            this.name=ownDeviceName;
         }
     }
 
     public class MSG3{
         public String message3;
-        public int date3;
+        public long date3;
         public int type3;
+        public String name3;
 
-        public MSG3(String masg3, int type3, int Date3)
+        public MSG3(String masg3, int type3)
         {
             this.message3 = masg3;
             this.type3 = type3;
-            this.date3 = Date3;
-
-
+            this.name3=ownDeviceName;
+       this.date3=System.currentTimeMillis();
         }
     }
 
@@ -828,7 +839,10 @@ public class MainActivity extends AppCompatActivity {
         int index =0;
         for(MSG1 msg : MSG1List)
         {
-            messages[index]+="latitude :   ";
+            messages[index]="Device Name :  ";
+            messages[index]+=msg.name;
+
+            messages[index]+=" latitude :   ";
             messages[index]+= Float.toString(msg.latitud);
             messages[index]+= "  ";
             messages[index]+= "longitude : ";
@@ -845,14 +859,25 @@ public class MainActivity extends AppCompatActivity {
 
         String[] messy  =new String[MSG2List.size()];
         int index = 0;
+        /*Calendar c = Calendar.getInstance();
+        long now = c.getTimeInMillis();
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        long passed = now - c.getTimeInMillis();*/
+        long secondsPassed = System.currentTimeMillis();
         for (MSG2 msg:  MSG2List)
         {
-            messy[index]="Message :  ";
+            messy[index]="Device Name :  ";
+            messy[index]+=msg.name+" ";
+            messy[index]+="  Message :  ";
             messy[index] += msg.message;
-            messy[index] += " Date :  ";
-            messy[index] +=msg.date;
             index++;
         }
+
+
+
         ArrayAdapter adapter =  new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,messy );
         MSG2ListView.setAdapter(adapter);
     }
@@ -860,12 +885,13 @@ public class MainActivity extends AppCompatActivity {
     {
         String[] messy1  =new String[MSG3List.size()];
         int index = 0;
+        long secondsPassed1 = System.currentTimeMillis();
         for (MSG3 msg:  MSG3List)
         {
-            messy1[index]="Message :  ";
+            messy1[index]="Device Name :  ";
+            messy1[index]+=msg.name3+" ";
+            messy1[index]+="  Message :  ";
             messy1[index] += msg.message3;
-            messy1[index] += " Date :  ";
-            messy1[index] +=msg.date3;
             index++;
         }
         ArrayAdapter adapter =  new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,messy1 );
