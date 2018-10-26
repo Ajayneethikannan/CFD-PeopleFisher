@@ -3,6 +3,7 @@ package com.example.ajaynk.peoplefisher2;
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
 import android.net.wifi.WifiManager;
@@ -21,9 +22,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,6 +39,18 @@ public class MainActivity extends AppCompatActivity {
     Calendar cal  = Calendar.getInstance();
     static String message;
     static List<WifiP2pDevice> devList = new ArrayList<WifiP2pDevice>();
+    static Collection<MSG1> messageList1= new ArrayList<MSG1>();
+    static Collection<MSG2> messageList2 = new ArrayList<MSG2>();
+    static Collection<MSG3> messageList3 = new ArrayList<MSG3>();
+    ListView MSG1ListView;
+    ListView MSG2ListView;
+    ListView MSG3ListView;
+    SendMessage sendMessage;
+
+
+    static boolean shouldSendMessage = false;
+
+
 
     List<WifiP2pDevice> peers = new ArrayList<WifiP2pDevice>();
 
@@ -61,7 +72,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main) ;
         initialWork();
         exqListener();
+
         ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 123);
+
     }
 
 
@@ -76,27 +89,32 @@ public class MainActivity extends AppCompatActivity {
             }
             for (WifiP2pDevice device : devList) {
                 stopConnection();
+                shouldSendMessage = true;
+
                 try {
-                    Thread.sleep(8000);
-                    Log.d("debug", "thread sleeping for 8000");
+                    Thread.sleep(10000);
+                    Log.d("debug", "thread sleeping for 10000");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                    Log.d("debug", "thread sleeping for 8000 failed ");
+                    Log.d("debug", "thread sleeping for 10000 failed ");
 
                 }
 
 
-                final WifiP2pConfig config1 = new WifiP2pConfig();
+                WifiP2pConfig config1 = new WifiP2pConfig();
                 config1.deviceAddress = device.deviceAddress;
-                config1.groupOwnerIntent = 15;Log.d("debug", "m Gonna be publish progrss");
+                config1.groupOwnerIntent = 15;Log.d("debug", "m Gonna be publish progress");
                 publishProgress(config1);
 
 
                 falg = 1;
+                int count = 0;
                 Log.d("debug","starting while loop");
-                while (falg == 1) {
+                while (falg == 1 && count <= 20) {
                     try{
+
                         Thread.sleep(1000);
+                        count++;
 
                     }
                     catch(InterruptedException e)
@@ -144,10 +162,19 @@ public class MainActivity extends AppCompatActivity {
                     read_msg_box.setText(tempMsg);
                     break;
                 case 2:
-                     Bundle data = msg.getData();
+                    Bundle data = msg.getData();
                     read_msg_box.setText(data.getString("name"));
                 case 3:
                     stopConnection();
+                case 4:
+                    updateList1(messageList1);
+                    break;
+                case 5:
+                    updateList2(messageList2);
+                    break;
+                case 6:
+                    updateList3(messageList3);
+                    break;
 
 
             }
@@ -183,12 +210,12 @@ public class MainActivity extends AppCompatActivity {
                 mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
                     @Override
                     public void onSuccess() {
-                            connectionStatus.setText("Discovery Started");
+                        connectionStatus.setText("Discovery Started");
                     }
 
                     @Override
                     public void onFailure(int reason) {
-                            connectionStatus.setText("Connection Failed"+ reason);
+                        connectionStatus.setText("Connection Failed"+ reason);
                     }
                 });
             }
@@ -196,15 +223,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-       btnSend.setOnClickListener(new View.OnClickListener() {
-           @Override
-           public void onClick(View view) {
-               message = writeMsg.getText().toString();
-               SendMessage sendMessage = new SendMessage();
-               Log.d("debug", "trying to run sendMessage.execute(peers)");
-               sendMessage.execute(peers);
-           }
-       });
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                message = writeMsg.getText().toString();
+                shouldSendMessage = true;
+                if(sendMessage != null)sendMessage.cancel(true);
+                sendMessage = new SendMessage();
+                Log.d("debug", "trying to run sendMessage.execute(peers)");
+                sendMessage.execute(peers);
+            }
+        });
 
         btnLoc.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -221,7 +251,66 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        MSG1ListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                int index = 0;
+                MSG1 mob = null;
+                for(MSG1 mobj : messageList1)
+                {
+
+                    if(index == position) mob = mobj;
+                    index++;
+                }
+                if(mob != null) {
+                    String msg = "1 " + mob.latitud + " " + mob.longitud;
+                    writeMsg.setText(msg);
+                }
+
+            }
+        });
+        MSG2ListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                int index = 0;
+                MSG2 mob = null;
+                for(MSG2 mobj : messageList2)
+                {
+
+                    if(index == position) mob = mobj;
+                    index++;
+                }
+                if(mob != null) {
+                    String msg = "2 " + mob.message +" " + mob.date;
+                    writeMsg.setText(msg);
+                }
+
+            }
+        });
+        MSG3ListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                int index = 0;
+                MSG3 mob = null;
+                for(MSG3 mobj : messageList3)
+                {
+
+                    if(index == position) mob = mobj;
+                    index++;
+                }
+                if(mob != null) {
+                    String msg = "3 " + mob.message3 + " " + mob.date3;
+                    writeMsg.setText(msg);
+                }
+
+            }
+        });
     }
+
+
     private void initialWork()
     {
 
@@ -244,6 +333,10 @@ public class MainActivity extends AppCompatActivity {
         mintentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         mintentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         mintentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+        MSG1ListView = (ListView) findViewById(R.id.MSG1ListView);
+        MSG2ListView = (ListView) findViewById(R.id.MSG2ListView);
+        MSG3ListView = (ListView) findViewById(R.id.MSG3ListView);
+
 
     }
 
@@ -272,9 +365,9 @@ public class MainActivity extends AppCompatActivity {
                 listView.setAdapter(adapter);
             }
             if(peers.size() == 0)
-                {
-                    Toast.makeText( that, "No peers found , please stay calm", Toast.LENGTH_SHORT).show();
-                }
+            {
+                Toast.makeText( that, "No peers found , please stay calm", Toast.LENGTH_SHORT).show();
+            }
         }
     };
 
@@ -339,7 +432,12 @@ public class MainActivity extends AppCompatActivity {
 
                 sendReceive = new SendReceive(socket);
                 sendReceive.start();
-                sendReceive.write(message);
+                if(shouldSendMessage)
+                {
+                    sendReceive.write(message);
+                    shouldSendMessage = false;
+                }
+
                 stopConnection();
 
 
@@ -376,9 +474,14 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                socket.connect(new InetSocketAddress(hostAdd, 4000), 100000);
+                socket.connect(new InetSocketAddress(hostAdd, 4000), 5000);
                 sendReceive = new SendReceive(socket);
                 sendReceive.start();
+                if(shouldSendMessage)
+                {
+                    sendReceive.write(message);
+                    shouldSendMessage = false;
+                }
             }
             catch (IOException e)
             {
@@ -411,6 +514,7 @@ public class MainActivity extends AppCompatActivity {
                 outputStream = socket.getOutputStream();
                 Log.i("message", "got streams");
 
+
             }
             catch (IOException e)
             {
@@ -424,6 +528,7 @@ public class MainActivity extends AppCompatActivity {
             byte[] buffer = new byte[1024];
             int bytes;
 
+
             while( socket!=null)
             {
                 try{
@@ -431,9 +536,123 @@ public class MainActivity extends AppCompatActivity {
 
                     if(bytes>0)
                     {
-                        handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
+
                         Log.i("message", "writing message");
-                        handler.obtainMessage(3, bytes, -1,buffer).sendToTarget();
+                        float lon,lat;
+                        String n= new String(buffer,"UTF-8");
+                        int len = n.length();
+                        int index;
+                        int type = Character.getNumericValue(n.charAt(0));
+                        char[] charr = new char[len];
+                        charr = n.toCharArray();
+                        for(int i=0;i< len;i++){
+                            if(!Character.isDigit(n.charAt(i)) && !Character.isLetter(n.charAt(i)) && !Character.isWhitespace(n.charAt(i))){
+                                len = i;
+                                break;
+                            }
+                        }
+
+                        //int  indexx =n.indexOf(null);
+                        n= n.substring(0,len);
+                        switch(type)
+                        {
+                            case 1:
+                                Log.d("case 1", " 457");
+                                int first = n.indexOf(' ');
+                                float latitude = Float.parseFloat(n.substring(0, first));
+                                float longitude= Float.parseFloat(n.substring(first+1));
+                                handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
+                                this.write("4");
+                                messageList1.add(new MSG1(latitude,longitude));
+                                handler.obtainMessage(4, bytes, -1,buffer).sendToTarget();
+                                try {
+                                    Thread.sleep(2500);
+                                }
+                                catch(InterruptedException e)
+                                {
+                                    e.printStackTrace();
+                                }
+
+                                stopConnection();
+                                break;
+
+
+
+                            case 2:
+                                Log.d("case 2", " 471");
+                                handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
+                                int firind = n.indexOf(' ');
+                                int secind = n.indexOf(' ',firind+1);
+                                String mesg = n.substring(firind+1,secind);
+                                int ones= Integer.parseInt(n.substring(0,firind));
+                                int threes = Integer.parseInt(n.substring(secind+1,len));
+
+
+
+                                messageList2.add(new MSG2(mesg,ones,threes));
+                                this.write("4");
+                                Collections.sort( (ArrayList)messageList2 , new Comparator<MSG2>(){
+                                    public int compare(MSG2 o1, MSG2 o2){
+                                        return o1.date - o2.date;
+                                    }
+                                });
+                                handler.obtainMessage(5, bytes, -1,buffer).sendToTarget();
+                                try {
+                                    Thread.sleep(2500);
+                                }
+                                catch(InterruptedException e)
+                                {
+                                    e.printStackTrace();
+                                }
+                                stopConnection();
+                                break;
+
+                            case 3:
+                                Log.d("case 3", " 477");
+                                handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
+                                this.write("4");
+                                int firind1 = n.indexOf(' ');
+                                int secind1 = n.indexOf(' ',firind1+1);
+                                Log.d("message " , n);
+                                String mesg1 = n.substring(firind1+1,secind1);
+                                int ones1= Integer.parseInt(n.substring(0,firind1));
+                                Log.d("message " , len + "");
+                                //int threes1 = Integer.parseInt(n.substring(secind1+1);
+
+
+                                this.write("4");
+                                messageList3.add(new MSG3(mesg1,ones1,1700));
+                                handler.obtainMessage(6, bytes, -1,buffer).sendToTarget();
+                                if(serverClass != null)
+                                {
+                                    try {
+                                        Thread.sleep(2500);
+                                    }
+                                    catch(InterruptedException e)
+                                    {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                stopConnection();
+                                break;
+                            case 4:
+                                Log.d("case 4", "  482");
+                                stopConnection();
+                                break;
+                            default:
+
+                                Log.d("default ", " 487");
+                                stopConnection();
+                                break;
+                        }
+
+
+
+
+
+
+
+
 
 
                     }
@@ -456,11 +675,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("message", "writing in output"+str);
 
                 outputStream.write(str.getBytes());
-                Message message  = new Message();
-                message.what = 2;
-                message.getData().putString("name", str);
-                handler.sendMessage(message);
-
                 Log.i("message", "writing in output");
 
 
@@ -473,98 +687,192 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-public void stopConnection()
-{
-    if(sendReceive != null)
+    public void stopConnection()
     {
-        if(sendReceive.inputStream != null)
+        if(sendReceive != null)
         {
-            try{
-                sendReceive.inputStream.close();
-            }
-            catch(IOException e)
+            if(sendReceive.inputStream != null)
             {
+                try{
+                    sendReceive.inputStream.close();
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            if(sendReceive.outputStream!= null)
+            {
+                try{
+                    sendReceive.outputStream.close();
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            sendReceive.socket = null;
+            sendReceive.interrupt();
+            sendReceive = null;
+        }
+
+        if(serverClass != null)
+        {
+
+            try {
+                if(serverClass!= null)serverClass.serverSocket.close();
+            }
+            catch(IOException e) {
+
+                e.printStackTrace();
+                Log.d("error ","here");
+            }
+            if(serverClass!= null)serverClass.interrupt();
+            serverClass = null;
+
+        }
+
+        if(clientClass != null)
+        {
+            try {
+                clientClass.socket.close();
+            }
+            catch(IOException e) {
+
                 e.printStackTrace();
             }
+            clientClass.interrupt();
+            clientClass = null;
         }
-        if(sendReceive.outputStream!= null)
+
+
+        mManager.removeGroup(mChannel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(getApplicationContext(), "removed group", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Toast.makeText(getApplicationContext(), "remove group fail", Toast.LENGTH_SHORT).show();
+            }
+
+        });
+        falg = 0;
+
+    }
+
+    public void Connect(final WifiP2pConfig config)
+    {
+        mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(that, "connected to  " + config.deviceAddress, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Toast.makeText(that, "not connected! "+ reason, Toast.LENGTH_SHORT).show();
+                falg = 0;
+                stopConnection();
+
+            }
+
+
+        });
+    }
+
+
+    public class MSG2{
+        public String message;
+        public int date;
+        public int type;
+
+        public MSG2(String masg, int type, int Date)
         {
-            try{
-                sendReceive.outputStream.close();
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-            }
+            this.message = masg;
+            this.type = type;
+            this.date = Date;
+
+
         }
-        sendReceive.socket = null;
-        sendReceive.interrupt();
-        sendReceive = null;
     }
 
-    if(serverClass != null)
+    public class MSG1{
+        public float longitud;
+        public float latitud;
+        public MSG1(float longitudee,float latitudee){
+            this.longitud = longitudee;
+            this.latitud= latitudee;
+        }
+    }
+
+    public class MSG3{
+        public String message3;
+        public int date3;
+        public int type3;
+
+        public MSG3(String masg3, int type3, int Date3)
+        {
+            this.message3 = masg3;
+            this.type3 = type3;
+            this.date3 = Date3;
+
+
+        }
+    }
+
+    public void updateList1(Collection<MSG1> MSG1List)
+    {
+        String[] messages = new String[MSG1List.size()];
+        int index =0;
+        for(MSG1 msg : MSG1List)
+        {
+            messages[index]+="latitude :   ";
+            messages[index]+= Float.toString(msg.latitud);
+            messages[index]+= "  ";
+            messages[index]+= "longitude : ";
+            messages[index]+=Float.toString(msg.longitud);
+            index++;
+
+        }
+        ArrayAdapter adapter =  new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,messages );
+        MSG1ListView.setAdapter(adapter);
+    }
+    public void updateList2(Collection<MSG2> MSG2List)
     {
 
-        try {
-            serverClass.serverSocket.close();
-        }
-        catch(IOException e) {
 
-            e.printStackTrace();
-            Log.d("error ","here");
+        String[] messy  =new String[MSG2List.size()];
+        int index = 0;
+        for (MSG2 msg:  MSG2List)
+        {
+            messy[index]="Message :  ";
+            messy[index] += msg.message;
+            messy[index] += " Date :  ";
+            messy[index] +=msg.date;
+            index++;
         }
-        serverClass.interrupt();
-        serverClass = null;
-
+        ArrayAdapter adapter =  new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,messy );
+        MSG2ListView.setAdapter(adapter);
     }
-
-    if(clientClass != null)
+    public void updateList3(Collection<MSG3> MSG3List)
     {
-        try {
-            clientClass.socket.close();
+        String[] messy1  =new String[MSG3List.size()];
+        int index = 0;
+        for (MSG3 msg:  MSG3List)
+        {
+            messy1[index]="Message :  ";
+            messy1[index] += msg.message3;
+            messy1[index] += " Date :  ";
+            messy1[index] +=msg.date3;
+            index++;
         }
-        catch(IOException e) {
+        ArrayAdapter adapter =  new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,messy1 );
+        MSG3ListView.setAdapter(adapter);
 
-            e.printStackTrace();
-        }
-        clientClass.interrupt();
-        clientClass = null;
+
     }
-
-
-  mManager.removeGroup(mChannel, new WifiP2pManager.ActionListener() {
-      @Override
-      public void onSuccess() {
-          Toast.makeText(getApplicationContext(), "removed group", Toast.LENGTH_SHORT).show();
-      }
-
-      @Override
-      public void onFailure(int reason) {
-          Toast.makeText(getApplicationContext(), "remove group fail", Toast.LENGTH_SHORT).show();
-      }
-
-  });
-    falg = 0;
-
-}
-
-public void Connect(final WifiP2pConfig config)
-{
-    mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
-        @Override
-        public void onSuccess() {
-            Toast.makeText(that, "connected to  " + config.deviceAddress, Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onFailure(int reason) {
-            Toast.makeText(that, "not connected!", Toast.LENGTH_SHORT).show();
-
-        }
-
-
-    });
-}
 
 
 
