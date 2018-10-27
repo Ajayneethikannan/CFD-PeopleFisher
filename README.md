@@ -35,6 +35,9 @@ Follow these tips to avoid errors:<br/>
 <br/>
 2.If the app choses not to respond, please switch off the wifi, and the application and try again.
 <br/>
+3.Trilateration is currently not supported on all the android devices so please use the Trilateration button with utmost caution.
+ <br/>
+
 
 3.**Buttons**:
 <br/>
@@ -61,6 +64,7 @@ our purpose, as they relied heavily on the internet and bluetooth.So we discarde
 <br/>
 We plan to use AZURE as the secure database in which to store the data securely in the future, due to time constraints,<br/>
 and the strong INDEPENDENCE of the app from INTERNET, we couldnt implement in the stipulated time. We request the judges to be considerate regarding this.<br/>
+
 
 
 **THANK YOU!!**
