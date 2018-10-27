@@ -63,3 +63,4 @@ We plan to use AZURE as the secure database in which to store the data securely 
 and the strong INDEPENDENCE of the app from INTERNET, we couldnt implement in the stipulated time. We request the judges to be considerate regarding this.<br/>
 
 
+**THANK YOU!!**
