@@ -1,5 +1,7 @@
 package com.example.ajaynk.peoplefisher2;
 
+
+
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +15,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import java.util.List;
 import android.widget.*;
 
 import java.io.IOException;
@@ -25,6 +28,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,12 +47,17 @@ public class MainActivity extends AppCompatActivity {
     static List<WifiP2pDevice> devList = new ArrayList<WifiP2pDevice>();
     static Collection<MSG1> messageList1= new ArrayList<MSG1>();
     static Collection<MSG2> messageList2 = new ArrayList<MSG2>();
-    static Collection<MSG3> messageList3 = new ArrayList<MSG3>();
+    //static Collection<MSG3> messageList3 = new ArrayList<MSG3>();
     ListView MSG1ListView;
     ListView MSG2ListView;
-    ListView MSG3ListView;
+    //ListView MSG3ListView;
     SendMessage sendMessage;
     String ownDeviceName = "survivor";
+    Button Triangle;
+    double lat1 = 20.5937, long1 = 78.9629, lat2 = 20.5937 ,long2 = 78.9629, lat3 =20.5937, long3 = 78.9629;//initializing with india value
+    double distance1 = 100, distance2 = 100, distance3 = 100;
+    boolean UsingTril = false;
+    int counter  = 0;
 
 
     static boolean shouldSendMessage = false;
@@ -65,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     ServerClass serverClass;
     ClientClass clientClass;
     SendReceive sendReceive;
+    double LAT, LONG;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -174,9 +184,8 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 5:
                     updateList2(messageList2);
-                    break;
-                case 6:
-                    updateList3(messageList3);
+                case 8:
+                    updateLocation();
                     break;
 
 
@@ -203,7 +212,21 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        Triangle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(peers.size() >= 3)
+                {
 
+                }
+                else{
+                    Toast.makeText(getApplicationContext(), "Not enough people, please stay calm", Toast.LENGTH_SHORT).show();
+
+                }
+            }
+        }
+
+        );
         btnDiscover.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view)
@@ -246,11 +269,13 @@ public class MainActivity extends AppCompatActivity {
                 GpsTracker gt = new GpsTracker(getApplicationContext());
                 Location l = gt.getLocation();
                 if( l == null){
+                    LAT = 20.5937;
+                    LONG  = 78.9629;
                     Toast.makeText(getApplicationContext(),"GPS unable to get Value",Toast.LENGTH_SHORT).show();
                 }else {
-                    double lat = l.getLatitude();
-                    double lon = l.getLongitude();
-                    Toast.makeText(getApplicationContext(),"GPS Lat = "+lat+"\n lon = "+lon,Toast.LENGTH_SHORT).show();
+                    LAT = l.getLatitude();
+                    LONG = l.getLongitude();
+                    Toast.makeText(getApplicationContext(),"GPS Lat = "+LAT+"\n lon = "+LONG,Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -292,25 +317,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        MSG3ListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                int index = 0;
-                MSG3 mob = null;
-                for(MSG3 mobj : messageList3)
-                {
-
-                    if(index == position) mob = mobj;
-                    index++;
-                }
-                if(mob != null) {
-                    String msg = "3 " + mob.message3 + " " + mob.date3;
-                    writeMsg.setText(msg);
-                }
-
-            }
-        });
     }
 
 
@@ -325,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
         read_msg_box = (TextView) findViewById(R.id.readMsg);
         connectionStatus = (TextView) findViewById(R.id.connectionStatus);
         writeMsg = (EditText) findViewById(R.id.writeMsg);
-
+        Triangle = (Button) findViewById(R.id.btnTril);
         wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         mManager = (WifiP2pManager)  getSystemService(Context.WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
@@ -338,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
         mintentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
         MSG1ListView = (ListView) findViewById(R.id.MSG1ListView);
         MSG2ListView = (ListView) findViewById(R.id.MSG2ListView);
-        MSG3ListView = (ListView) findViewById(R.id.MSG3ListView);
+ //       MSG3ListView = (ListView) findViewById(R.id.MSG3ListView);
 
 
     }
@@ -564,12 +571,37 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("case 1", " 457");
                                 int first = n.indexOf(' ');
                                 int second = n.indexOf(' ',first+1);
-                                float latitude = Float.parseFloat(n.substring(0, second));
-                                float longitude= Float.parseFloat(n.substring(second+1));
+                                int third = n.indexOf(' ', second + 1);
+                                 double latitude = Double.parseDouble(n.substring(first+1, second));
+                                double longitude= Double.parseDouble(n.substring(second+1, third));
+                                int strength = Integer.parseInt(n.substring(third+1));
                                 handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
                                 this.write("4");
                                 messageList1.add(new MSG1(latitude,longitude));
-                                handler.obtainMessage(4, bytes, -1,buffer).sendToTarget();
+                                handler.obtainMessage(4, bytes, -1,buffer).sendToTarget();//update position list
+                                if(UsingTril)
+                                {
+                                    switch(counter)
+                                    {
+                                        case 0:
+                                            distance1 = 10 * Math.pow(strength, 0.5);
+                                            lat1 = latitude;
+                                            long1 = longitude;
+                                            break;
+                                        case 1:
+                                            distance2 = 10 * Math.pow(strength, 0.5);
+                                            lat2 = latitude;
+                                            long2 = longitude;
+                                            break;
+                                        case 2:
+                                            distance3 = 10*Math.pow(strength, 0.5);
+                                            lat3 = latitude;
+                                            long3 = longitude;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
                                 try {
                                     Thread.sleep(2500);
                                 }
@@ -615,19 +647,19 @@ public class MainActivity extends AppCompatActivity {
                             case 3:
                                 Log.d("case 3", " 477");
                                 handler.obtainMessage(MESSAGE_READ, bytes, -1,buffer).sendToTarget();
-                                this.write("4");
-                                int firind1 = n.indexOf(' ');
-                                //int secind1 = n.indexOf(' ',firind1+1);
-                                //int thirindind1 = n.indexOf(' ',secind1+1);
-                                Log.d("message " , n);
-                                String mesg1 = n.substring(firind1+1);
-                                int ones1= Integer.parseInt(n.substring(0,firind1));
-                                Log.d("message " , len + "");
-                                //int threes1 = Integer.parseInt(n.substring(secind1+1);
+                                int STRENGTH = wifiManager.calculateSignalLevel(60, 10);
+                                handler.obtainMessage(8, bytes, -1,buffer).sendToTarget();
+                                this.write("1 "+ LAT + " "+ LONG+ " "+ STRENGTH);
+                                try {
+                                    Thread.sleep(1000);
+                                }
+                                catch(InterruptedException e)
+                                {
+                                    e.printStackTrace();
+                                }
 
-
                                 this.write("4");
-                                messageList3.add(new MSG3(mesg1,ones1));
+                              //  messageList3.add(new MSG3(mesg1,ones1));
                                 handler.obtainMessage(6, bytes, -1,buffer).sendToTarget();
                                 if(serverClass != null)
                                 {
@@ -808,45 +840,50 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public class MSG1{
-        public float longitud;
-        public float latitud;
+        public double longitud;
+        public double latitud;
         public String name;
-        public MSG1(float longitudee,float latitudee){
+        public MSG1(double longitudee,double latitudee){
             this.longitud = longitudee;
             this.latitud= latitudee;
             this.name=ownDeviceName;
         }
     }
 
-    public class MSG3{
+    /*public class MSG3{
         public String message3;
         public long date3;
-        public int type3;
+        public float type3;
+        public float type4;
+        public int wifisig;
         public String name3;
 
-        public MSG3(String masg3, int type3)
+        public MSG3(int type3)
         {
             this.message3 = masg3;
             this.type3 = type3;
             this.name3=ownDeviceName;
-       this.date3=System.currentTimeMillis();
+            this.
+
         }
-    }
+    }*/
 
     public void updateList1(Collection<MSG1> MSG1List)
     {
         String[] messages = new String[MSG1List.size()];
         int index =0;
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         for(MSG1 msg : MSG1List)
         {
             messages[index]="Device Name :  ";
             messages[index]+=msg.name;
-
+            messages[index]+=" Time : ";
+            messages[index]+= timeStamp;
             messages[index]+=" latitude :   ";
-            messages[index]+= Float.toString(msg.latitud);
+            messages[index]+= Double.toString(msg.latitud);
             messages[index]+= "  ";
             messages[index]+= "longitude : ";
-            messages[index]+=Float.toString(msg.longitud);
+            messages[index]+=Double.toString(msg.longitud);
             index++;
 
         }
@@ -867,10 +904,15 @@ public class MainActivity extends AppCompatActivity {
         c.set(Calendar.MILLISECOND, 0);
         long passed = now - c.getTimeInMillis();*/
         long secondsPassed = System.currentTimeMillis();
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+//Local time zone
+        //SimpleDateFormat dateFormatLocal = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
         for (MSG2 msg:  MSG2List)
         {
             messy[index]="Device Name :  ";
             messy[index]+=msg.name+" ";
+            messy[index]+=" Time : ";
+            messy[index]+= timeStamp;
             messy[index]+="  Message :  ";
             messy[index] += msg.message;
             index++;
@@ -881,15 +923,18 @@ public class MainActivity extends AppCompatActivity {
         ArrayAdapter adapter =  new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,messy );
         MSG2ListView.setAdapter(adapter);
     }
-    public void updateList3(Collection<MSG3> MSG3List)
+    /*public void updateList3(Collection<MSG3> MSG3List)
     {
         String[] messy1  =new String[MSG3List.size()];
         int index = 0;
         long secondsPassed1 = System.currentTimeMillis();
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         for (MSG3 msg:  MSG3List)
         {
             messy1[index]="Device Name :  ";
             messy1[index]+=msg.name3+" ";
+            messy1[index]+=" Time : ";
+            messy1[index]+= timeStamp;
             messy1[index]+="  Message :  ";
             messy1[index] += msg.message3;
             index++;
@@ -898,8 +943,251 @@ public class MainActivity extends AppCompatActivity {
         MSG3ListView.setAdapter(adapter);
 
 
-    }
+    }*/
 
+    private  class TrilMessage extends AsyncTask<List<WifiP2pDevice>, WifiP2pConfig, Void>
+    {
+        @Override
+        protected Void doInBackground(List<WifiP2pDevice>... lists) {
+            falg = 1;
+            UsingTril = true;
+            counter = 0;
+            devList.clear();
+            for (WifiP2pDevice device : lists[0]) {
+                devList.add(device);
+            }
+            for (WifiP2pDevice device : devList) {
+                stopConnection();
+                shouldSendMessage = true;
+                message = "3";
+                if(counter == 3) {
+                    UsingTril = false;
+                    counter = 0;
+                    /*double xa,ya,za;
+                    int R=6371;
+                    xa = R*(Math.cos(Math.toRadians(lat1))*  Math.cos(Math.toRadians(long1)));
+                    ya = R*(Math.cos(Math.toRadians(lat1))*  Math.sin(Math.toRadians(long1)));
+                    za = R*(Math.sin(Math.toRadians(lat1));
+
+                    double xb,yb,zb;
+                    xb= R*(Math.cos(Math.toRadians(lat2))*  Math.cos(Math.toRadians(long2)));
+                    yb=R*(Math.cos(Math.toRadians(lat2))*  Math.sin(Math.toRadians(long2)));
+                    zb = R*(Math.sin(Math.toRadians(lat2));
+
+                    double  xc,yc,zc;
+                    xc = R*(Math.cos(Math.toRadians(lat3))*  Math.cos(Math.toRadians(long3)));
+                    yc= R*(Math.cos(Math.toRadians(lat3))*  Math.sin(Math.toRadians(long3)));
+                    zc = R*(Math.sin(Math.toRadians(lat3));*/
+
+                     class TriangulationUtils
+                    {
+                        private static final double EARTH_RADIUS = 6371; // km
+
+                        private static final int X = 0;
+                        private static final int Y = 1;
+                        private static final int Z = 2;
+
+                        /**
+                         * Calculate the position of the point by using the passed points position
+                         * and strength of signal.
+                         *
+                         * The actual calculation is called trilateration:
+                         * https://en.wikipedia.org/wiki/Trilateration
+                         *
+                         * Also few parts from:
+                         * http://stackoverflow.com/questions/2813615/trilateration-using-3-latitude-and-longitude-points-and-3-distances
+                         *
+                         * @return the resulting point calculated.
+                         */
+                        public  double[] triangulation(double lat0, double lon0, double r0, double lat1, double lon1, double r1, double lat2, double lon2, double r2)
+                        {
+                            // Convert to cartesian
+                            double[] p0 = latlon2cartesian(lat0, lon0);
+                            double[] p1 = latlon2cartesian(lat1, lon1);
+                            double[] p2 = latlon2cartesian(lat2, lon2);
+
+                            // Convert so that p0 sits at (0,0)
+                            double[] p0a = new double[]{0, 0, 0};
+                            double[] p1a = new double[]{p1[X] - p0[X], p1[Y] - p0[Y], p1[Z] - p0[Z]};
+                            double[] p2a = new double[]{p2[X] - p0[X], p2[Y] - p0[Y], p2[Z] - p0[Z]};
+
+                            // All distances refers to p0, the origin
+                            Double p1distance = distance(p0a, p1a);
+                            if (p1distance == null)
+                                return null;
+                            Double p2distance = distance(p0a, p2a);
+                            if (p2distance == null)
+                                return null;
+
+                            // unit vector of p1a
+                            double[] p1a_ev = new double[]{p1a[X] / p1distance, p1a[Y] / p1distance, p1a[X] / p1distance};
+                            // dot product of p1a_ev with p2a
+                            double p2b_x = p1a_ev[X]*p2a[X] + p1a_ev[Y]*p2a[Y] + p1a_ev[Z]*p2a[Z];
+                            // finding the y of p2b (for same distance of p2a from p0a)
+                            double p2b_y = Math.sqrt(Math.abs(Math.pow(p2distance, 2) - Math.pow(p2b_x, 2)));
+
+                            // Convert so that p1 stays on the x line (rotates the plane)
+                            double[] p0b = new double[]{0, 0, 0};
+                            double[] p1b = new double[]{p1distance, 0, 0};
+                            double[] p2b = new double[]{p2b_x, p2b_y, 0};
+
+                            double d = p1distance , i = p2b_x, j = p2b_y;
+
+                            double x = (Math.pow(r0, 2) - Math.pow(r1, 2) + Math.pow(d, 2)) / (2*d);
+                            double y = (Math.pow(r0, 2) - Math.pow(r2, 2) + Math.pow(i, 2) + Math.pow(j, 2)) / (2*j) - (i/j)*x;
+
+                            double[] pb = new double[]{x, y, 0};
+                            Double pbdistance = distance(p0b, pb);
+                            if (pbdistance == null)
+                                return null;
+
+                            // Opposite operation done for converting points from coordinate system a to b
+                            double pax = pb[X]/p1a_ev[X] + pb[Y]/p1a_ev[Y] + pb[Z]/p1a_ev[Z];
+                            double[] pa = new double[]
+                                    {
+                                            pax,
+                                            Math.sqrt(Math.abs(Math.pow(pbdistance, 2) - Math.pow(pax, 2))),
+                                            0
+                                    };
+
+                            // Opposite operation done for converting points from coordinate system to a
+                            double p[] = new double[]
+                                    {
+                                            pa[X] + p0[X],
+                                            pa[Y] + p0[Y],
+                                            pa[Z] + p0[Z]
+                                    };
+
+                            return cartesian2latlon(p[X], p[Y], p[Z]);
+                        }
+
+                        private double[ ]  latlon2cartesian(double lat, double lon)
+                        {
+                            return new double[ ]
+                                    {
+                                            Math.cos(lon) * Math.cos(lat) * EARTH_RADIUS,
+                                            Math.sin(lon) * Math.cos(lat) * EARTH_RADIUS,
+                                            Math.sin(lat) * EARTH_RADIUS
+                                    };
+                        }
+
+                        private double[] cartesian2latlon(double x, double y, double z)
+                        {
+                            return new double[]
+                                    {
+                                            Math.atan(y/x),
+                                            Math.acos(z/EARTH_RADIUS)
+                                    };
+                        }
+
+                        private  Double distance(double[] p0, double[] p1)
+                        {
+
+                            if (p0.length != p1.length)
+                                return null;
+
+                            double val = 0;
+                            for (int n = 0; n < p0.length; n++)
+                                val += Math.pow(p1[n] - p0[n], 2);
+                            return Math.sqrt(val);
+                        }
+                        public List<Object> bestOf(int num, Object... wifiSpots)
+                        {
+                            return null;
+                        }
+                    }
+
+                    TriangulationUtils obj = new TriangulationUtils();
+                     double [] db = new double[2];
+                     db = obj.triangulation(lat1,long1,distance1,lat2,long2,distance2,lat3,long3,distance3);
+                    LAT=db[1];
+                    LONG = db[0];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    break;
+                }
+                try {
+                    Thread.sleep(10000);
+                    Log.d("debug", "thread sleeping for 10000");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Log.d("debug", "thread sleeping for 10000 failed ");
+
+                }
+
+
+                WifiP2pConfig config1 = new WifiP2pConfig();
+                config1.deviceAddress = device.deviceAddress;
+                config1.groupOwnerIntent = 15;
+                Log.d("debug", "m Gonna be publish progress");
+                publishProgress(config1);
+                counter = (counter +1 )%4;
+
+                falg = 1;
+                int count = 0;
+                Log.d("debug","starting while loop");
+                while (falg == 1 && count <= 20) {
+                    try{
+
+                        Thread.sleep(1000);
+                        count++;
+
+                    }
+                    catch(InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    Log.d("debug", "i am in while loop");
+
+                }
+
+
+
+            }
+            return null;
+        }
+        @Override
+        protected void onProgressUpdate(WifiP2pConfig... values) {
+            super.onProgressUpdate(values);
+            Connect(values[0]);
+            Log.d("debug", "trying to connect(values[0]) ");
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            Log.d("debug", "trying to onPostExecute ");
+            super.onPostExecute(aVoid);
+
+        }
+    }
+    public void updateLocation()
+    {
+
+        GpsTracker gt = new GpsTracker(getApplicationContext());
+        Location l = gt.getLocation();
+        if( l == null){
+            LAT = 20.5937;
+            LONG  = 78.9629;
+            Toast.makeText(getApplicationContext(),"GPS unable to get Value",Toast.LENGTH_SHORT).show();
+        }else {
+            LAT = l.getLatitude();
+            LONG = l.getLongitude();
+            Toast.makeText(getApplicationContext(),"GPS Lat = "+LAT+"\n lon = "+LONG,Toast.LENGTH_SHORT).show();
+        }
+    }
 
 
 }
