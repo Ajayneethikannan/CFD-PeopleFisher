@@ -217,7 +217,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(peers.size() >= 3)
                 {
-
+                      TrilMessage tril = new TrilMessage();
+                      tril.execute(peers);
                 }
                 else{
                     Toast.makeText(getApplicationContext(), "Not enough people, please stay calm", Toast.LENGTH_SHORT).show();
